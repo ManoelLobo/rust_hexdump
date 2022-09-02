@@ -1,29 +1,28 @@
-use std::io::Read;
+use std::{fs::File, io::Read};
 
 const BYTES_PER_LINE: usize = 16;
-// r#""# is a raw string literal: double quotes are not escaped
-// b flags to treat content as bytes, not UTF-8
-const INPUT: &[u8] = br#"
+
 fn main() {
-    println!("Hello, world!");
-}
-"#;
+    let arg1 = std::env::args().nth(1);
 
-fn main() -> std::io::Result<()> {
-    let mut buffer = vec![];
-    INPUT.read_to_end(&mut buffer)?;
+    let filename = arg1.expect("usage xview <filename>");
 
-    let mut position_in_input = 0;
-    for line in buffer.chunks(BYTES_PER_LINE) {
-        print!("[0x{:08x}] ", position_in_input);
+    let mut file = File::open(filename).expect("file not found");
+    let mut position = 0;
+    let mut buffer = [0; BYTES_PER_LINE];
 
-        for byte in line {
-            print!("{:02x} ", byte);
+    while file.read_exact(&mut buffer).is_ok() {
+        print!("[0x{:08x}] ", position);
+
+        for byte in &buffer {
+            match *byte {
+                0x00 => print!(".  "),
+                0xff => print!("## "),
+                _ => print!("{:02x} ", byte),
+            }
         }
 
         println!();
-        position_in_input += BYTES_PER_LINE;
+        position += BYTES_PER_LINE;
     }
-
-    Ok(())
 }
